@@ -1,101 +1,134 @@
-````markdown
-# GoTorrent
+# 🌀 GoTorrent
 
-## About The Project
+[![Go Version](https://img.shields.io/badge/go-1.22+-00ADD8?logo=go\&logoColor=white)](https://go.dev/)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/yourname/gotorrent/ci.yml?branch=main)](https://github.com/yourname/gotorrent/actions)
+[![License](https://img.shields.io/github/license/yourname/gotorrent?color=brightgreen)](LICENSE)
 
-GoTorrent is a simplified, peer-to-peer (P2P) file-sharing application built in Go. It allows users to create torrent-like files, seed (share) content, and download files in chunks from peers. The current implementation uses direct TCP connections for file transfer, providing a foundational understanding of how such systems can operate.
+A minimal, educational peer‑to‑peer (P2P) file‑sharing app written in Go.
+Create `.torrent` metadata, seed files, and download chunks from peers – all with a single binary.
 
-### Features
+---
 
-* **Torrent File Creation**: Generate `.torrent` files that contain metadata about the shared file, including its name, size, chunk size, and SHA256 hashes of each chunk for integrity verification.
-* **File Seeding**: Act as a seeder to serve file chunks to downloaders upon request.
-* **File Downloading**: Download files by requesting chunks from available peers and reconstructing the original file.
-* **Chunk-based Transfer**: Files are divided into smaller chunks, enabling parallel downloads and integrity checking.
-* **Progress Tracking**: Basic statistics and progress reporting for both seeding and downloading.
-* **Hash Verification**: Ensures data integrity by verifying the SHA256 hash of each downloaded chunk against the `.torrent` file's metadata.
+## ✨ Key Features
 
-### Built With
+* **Torrent Creation** – Generate metadata files with SHA‑256 chunk hashes.
+* **Seeding** – Serve file chunks to peers over TCP.
+* **Downloading** – Fetch chunks in parallel and reconstruct the original file.
+* **Integrity‑First** – Every chunk is verified before it hits disk.
+* **Progress Tracking** – Simple, human‑readable stats for both seeders and downloaders.
 
-* [Go](https://go.dev/)
+---
 
-## Getting Started
+## 🚀 Built With
 
-To get a local copy up and running, follow these simple steps.
+| Framework / Library | Purpose                                            |
+| ------------------- | -------------------------------------------------- |
+| **Go stdlib**       | Core language + `net`, `os`, `crypto/sha256`, etc. |
+
+> *Add‑ons & plugins such as Echo, Swagger, or DDNS clients are planned but are listed later in **Acknowledgements**.*
+
+## 📑 Table of Contents
+
+1. [Getting Started](#-getting-started)
+2. [Usage](#-usage)
+3. [Roadmap](#-roadmap)
+4. [Contributing](#-contributing)
+5. [License](#-license)
+6. [Acknowledgements](#-acknowledgements)
+
+---
+
+## 🏗️ Getting Started
 
 ### Prerequisites
 
-* Go installed on your system.
+* Go **1.22 or later** installed (`go version`).
 
 ### Installation
 
-1.  Clone the repository (or copy the provided code into files):
-    ```bash
-    git clone <repository_url> # Replace with your repo URL if applicable
-    cd gotorrent
-    ```
-2.  Build the application:
-    ```bash
-    go build -o gotorrent .
-    ```
+```bash
+git clone https://github.com/yourname/gotorrent.git   # replace with actual URL
+cd gotorrent
+go build -o gotorrent .
+```
 
-## Usage
+---
 
-GoTorrent can be run in three modes: `create`, `seed`, or `download`.
+## 🔧 Usage
 
-### 1. Create a Torrent File
+GoTorrent has three modes: **create**, **seed**, **download**.
 
-This mode generates a `.torrent` file for a specified local file.
+### 1. Create a `.torrent` file
 
 ```bash
-go run . create <filepath_to_share>
-# Example: go run . create my_large_file.txt
-````
+./gotorrent create <file_path>
+# Example
+./gotorrent create ./movies/Interstellar.mkv
+```
 
-This will create a `my_large_file.txt.torrent` file in the `./torrents` directory.
+The generated `Interstellar.mkv.torrent` will appear in `./torrents`.
 
-### 2\. Start Seeding
-
-This mode starts a seeder that listens for incoming download requests for a specified file. The seeder will make the `filepath` specified during the create process available.
+### 2. Seed the file
 
 ```bash
-go run . seed <filepath_of_original_file>
-# Example: go run . seed my_large_file.txt
+./gotorrent seed <original_file_path>
+# Example
+./gotorrent seed ./movies/Interstellar.mkv
 ```
 
-The seeder will listen on `127.0.0.1:8080`.
+By default the seeder listens on `127.0.0.1:8080`.
 
-### 3\. Start Downloading
-
-This mode initiates the download of a file using a `.torrent` file.
+### 3. Download using the torrent file
 
 ```bash
-go run . download <path_to_torrent_file>
-# Example: go run . download ./torrents/my_large_file.txt.torrent
+./gotorrent download ./torrents/Interstellar.mkv.torrent
 ```
 
-The downloaded file will be saved in the `./downloads` directory.
+The file is reconstructed in `./downloads`.
 
-## Future Requirements & Scalability
+> **Tip:** Use different terminal tabs for seeder and downloader when testing locally.
 
-The current implementation provides a basic foundation. To evolve into a publicly accessible and scalable file-sharing system, the following enhancements are envisioned:
+---
 
-  * **Transition to HTTP for Chunk Serving**:
-      * **Echo Framework Integration**: Replace the direct TCP listener in the seeder with an [Echo](https://echo.labstack.com/) web framework. This will allow seeders to expose HTTP endpoints (e.g., `/chunks/:fileName/:chunkIndex`) for serving file chunks. This leverages standard web protocols, making it easier to deploy on cloud platforms and integrate with existing web infrastructure.
-      * **HTTP Client for Downloader**: Modify the downloader to use standard HTTP requests to fetch chunks from seeders, moving away from raw TCP connections for data transfer.
-  * **Publicly Hosted Backend**:
-      * **Cloud Platform Deployment**: Deploy the seeder and potential tracker components on free backend servers like [Railway](https://railway.app/) or similar Platform as a Service (PaaS) providers. This requires careful consideration of how these platforms expose custom TCP/HTTP ports.
-      * **Dynamic IP Handling**: Implement Dynamic DNS (DDNS) if seeder nodes have dynamic IP addresses, ensuring that their public endpoints remain resolvable.
-  * **Centralized Tracker/Discovery Service**:
-      * **HTTP-based Tracker**: Introduce a separate, centralized HTTP service (also built with Echo) that acts as a tracker. Seeders would register the files they are sharing and their public addresses with this tracker. Downloaders would query the tracker to get a list of available peers for a desired file. This decouples peer discovery from hardcoded peer lists.
-  * **API Documentation with Swagger/OpenAPI**:
-      * **Automated Documentation**: Utilize tools like `swag` or `go-swagger` to generate interactive API documentation for the HTTP endpoints (e.g., for chunk serving and tracker services). This improves maintainability and allows for easier client integration.
-  * **Enhanced Scalability & Resiliency**:
-      * **Load Balancing**: With HTTP endpoints, cloud load balancers can be placed in front of multiple seeder instances, distributing traffic and improving throughput.
-      * **Cloud Object Storage Integration**: For seeders, consider storing files in cloud object storage (e.g., AWS S3, Google Cloud Storage, DigitalOcean Spaces) rather than local disk. This makes seeder instances stateless and highly scalable, as they can retrieve chunks from a shared, highly available storage layer.
-      * **NAT Traversal (for true P2P)**: For a fully decentralized model where users can seed from home, implement NAT traversal techniques (e.g., UPnP, PCP, STUN/TURN servers) to enable direct peer-to-peer connections despite network address translation. This is a complex but crucial step for true P2P.
-      * **Redundancy and High Availability**: Design for multiple instances of seeders and trackers to ensure continuous service availability and fault tolerance.
+## 🌱 Roadmap
 
-By implementing these future requirements, GoTorrent aims to evolve from a local demonstration into a robust, publicly accessible, and scalable file-sharing platform.
+| Stage    | Focus                                 | Status |
+| -------- | ------------------------------------- | ------ |
+| **v0.1** | Local P2P over TCP (current)          | ✅      |
+| **v0.2** | Switch to HTTP chunk endpoints (Echo) | 🚧     |
+| **v0.3** | Public tracker + cloud deployment     | 🕒     |
+| **v1.0** | NAT traversal & full decentralisation | 🔭     |
 
-```
-```
+See [FUTURE.md](FUTURE.md) for a detailed plan on scalability, load‑balancing, and object storage integration.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+> **Good first issues** are tagged `help-wanted`. Feel free to ask questions!
+
+---
+
+## 📝 License
+
+Distributed under the MIT License. See **LICENSE** for more information.
+
+---
+
+## 💐 Acknowledgements
+
+* [Echo](https://echo.labstack.com/) – planned HTTP framework
+* [Swag](https://github.com/swaggo/swag) – API docs generator
+* [Railway](https://railway.app/) – free cloud deployment platform
+* [DDNS‑Go](https://github.com/jeessy2/ddns-go) – dynamic DNS client
+* Inspired by the original [BitTorrent protocol](https://www.bittorrent.org/).
+
+---
+
+Made with ❤️ and Go.
